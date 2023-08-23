@@ -1,0 +1,62 @@
+version: '3'
+services:
+
+  db:
+    image: postgres:14.3
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_USER=test
+      - POSTGRES_DB=test
+    ports:
+      - "5432:5432"
+
+  pgbouncer_ps:
+    container_name: pgbouncer_ps
+    build: 
+      context: pgbouncer_ps
+    environment:
+       - DB_USER=test
+       - DB_PASSWORD=test
+       - DB_HOST=db
+       - DB_NAME=test
+       - POOL_MODE=transaction
+       - PREPARED_STATEMENT_CACHE_SIZE=100
+       - ADMIN_USERS=postgres,test
+       - AUTH_TYPE=plain
+    ports:
+      - "7432:5432"
+    depends_on:
+      - db
+
+  pgbouncer_regular:
+    container_name: pgbouncer_regular
+    build: 
+      context: pgbouncer_regular
+    environment:
+      - DB_USER=test
+      - DB_PASSWORD=test
+      - DB_HOST=db
+      - DB_NAME=test
+      - POOL_MODE=transaction
+      - ADMIN_USERS=postgres,test
+      - AUTH_TYPE=plain
+    ports:
+      - "6432:5432"
+    depends_on:
+      - db
+  
+  worker:
+    container_name: worker
+    build: 
+      context: worker
+    volumes:
+      - ./worker:/worker
+    depends_on:
+      - db
+      - pgbouncer_regular
+      - pgbouncer_ps
+
+volumes:
+  pg_data:
