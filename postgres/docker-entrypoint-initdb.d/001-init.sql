@@ -1,0 +1,5 @@
+CREATE SCHEMA test_schema;
+CREATE SCHEMA test_schema_2;
+
+CREATE EXTENSION hstore;
+CREATE EXTENSION citext;

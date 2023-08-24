@@ -8,6 +8,7 @@ RUN \
   # Download
   apk add -U --no-cache autoconf autoconf-doc automake udns udns-dev curl gcc libc-dev libevent libevent-dev libtool make openssl-dev pkgconfig postgresql-client git pandoc && \
   cd /tmp && \
+  pwd && \
   # Unpack, compile
   git clone https://github.com/knizhnik/pgbouncer.git && \
   cd pgbouncer && \

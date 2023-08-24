@@ -19,7 +19,39 @@ async def async_main(dsn):
     )
 
     async with engine.begin() as conn:
-        await conn.execute(sa.select(1))
+        meta = sa.MetaData()
+        t = sa.Table(
+            "x",
+            meta,
+            sa.Column("y", sa.Integer, server_default="5", primary_key=True),
+            sa.Column("data", sa.String(10)),
+            implicit_returning=False,
+        )
+
+        await conn.run_sync(meta.create_all)
+        await conn.execute(t.insert(), dict(data="data"))
+        result = await conn.execute(t.select())
+        assert list(result) == [(5, "data")]
+
+        await conn.run_sync(meta.drop_all)
+
+    async with engine.begin() as conn:
+        meta = sa.MetaData()
+        t = sa.Table(
+            "x",
+            meta,
+            sa.Column(
+                "y", sa.String(10), server_default="key_one", primary_key=True
+            ),
+            sa.Column("data", sa.String(10)),
+        )
+
+        await conn.run_sync(meta.create_all)
+        await conn.execute(t.insert(), dict(data="data"))
+        result = await conn.execute(t.select())
+        assert list(result) == [("key_one", "data")]
+
+        await conn.run_sync(meta.drop_all)
 
 
 p = ArgumentParser()

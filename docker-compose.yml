@@ -2,29 +2,37 @@ version: '3'
 services:
 
   db:
+    container_name: db
     image: postgres:14.3
     volumes:
       - pg_data:/var/lib/postgresql/data
+      - ./postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     environment:
       - POSTGRES_PASSWORD=test
       - POSTGRES_USER=test
       - POSTGRES_DB=test
+    command:
+      - postgres
+      - -c
+      - log_statement=all
+      - -c
+      - archive_mode=off
     ports:
       - "5432:5432"
 
   pgbouncer_ps:
     container_name: pgbouncer_ps
-    build: 
+    build:
       context: pgbouncer_ps
     environment:
-       - DB_USER=test
-       - DB_PASSWORD=test
-       - DB_HOST=db
-       - DB_NAME=test
-       - POOL_MODE=transaction
-       - PREPARED_STATEMENT_CACHE_SIZE=100
-       - ADMIN_USERS=postgres,test
-       - AUTH_TYPE=plain
+      - DB_USER=test
+      - DB_PASSWORD=test
+      - DB_HOST=db
+      - DB_NAME=test
+      - POOL_MODE=transaction
+      - PREPARED_STATEMENT_CACHE_SIZE=100
+      - ADMIN_USERS=postgres,test
+      - AUTH_TYPE=plain
     ports:
       - "7432:5432"
     depends_on:
@@ -32,7 +40,7 @@ services:
 
   pgbouncer_regular:
     container_name: pgbouncer_regular
-    build: 
+    build:
       context: pgbouncer_regular
     environment:
       - DB_USER=test
@@ -49,7 +57,7 @@ services:
   
   worker:
     container_name: worker
-    build: 
+    build:
       context: worker
     volumes:
       - ./worker:/worker
