@@ -14,7 +14,7 @@ RUN \
   cd pgbouncer && \
   git checkout -f prepared_statements -- && \
   git reset --hard origin/prepared_statements -- && \
-  git submodule foreach --recursive git\ submodule\ sync && \
+  git submodule foreach --recursive git submodule sync && \
   git submodule update --init --recursive && \
   git submodule --quiet foreach --recursive pwd && \
   ./autogen.sh && \
