@@ -31,7 +31,7 @@ services:
       - DB_HOST=db
       - DB_NAME=test
       - POOL_MODE=transaction
-      - PREPARED_STATEMENT_CACHE_SIZE=100
+      - PREPARED_STATEMENT_CACHE_SIZE=5000
       - ADMIN_USERS=postgres,test
       - AUTH_TYPE=plain
     ports:

@@ -32,16 +32,15 @@ ENV DOCKER_PG_LLVM_DEPS \
 
 RUN set -eux; \
 	\
-	wget -O postgresql.tar.bz2 "https://ftp.postgresql.org/pub/source/v$PG_VERSION/postgresql-$PG_VERSION.tar.bz2"; \
-	echo "$PG_SHA256 *postgresql.tar.bz2" | sha256sum -c -; \
-	mkdir -p /usr/src/postgresql; \
-	tar \
-		--extract \
-		--file postgresql.tar.bz2 \
-		--directory /usr/src/postgresql \
-		--strip-components 1 \
-	; \
-	rm postgresql.tar.bz2; \
+#	echo "$PG_SHA256 *postgresql.tar.bz2" | sha256sum -c -; \
+#	mkdir -p /usr/src/postgresql; \
+#	tar \
+#		--extract \
+#		--file postgresql.tar.gz \
+#		--directory /usr/src/postgresql \
+#		--strip-components 1 \
+#	; \
+#	rm postgresql.tar.gz; \
 	\
 	apk add --no-cache --virtual .build-deps \
 		$DOCKER_PG_LLVM_DEPS \
@@ -51,6 +50,7 @@ RUN set -eux; \
 		dpkg-dev dpkg \
 		flex \
 		g++ \
+        git \
 		gcc \
 		krb5-dev \
 		libc-dev \
@@ -77,9 +77,13 @@ RUN set -eux; \
 		zstd-dev \
 	; \
 	\
+	git clone "https://github.com/postgres/postgres.git" /usr/src/postgresql; \
 	cd /usr/src/postgresql; \
-    curl https://www.postgresql.org/message-id/attachment/149655/v1-0001-Support-prepared-statement-invalidation-when-resu.patch | patch -p1; \
-    curl https://www.postgresql.org/message-id/attachment/149656/v1-0002-Completely-remove-fixed_result-from-CachedPlanSou.patch | patch -p1; \
+# checkout to base commit
+	git checkout -f 36e4419d1f1ef06bba58a28a870aaaa8de73bb46 --; \
+    curl https://www.postgresql.org/message-id/attachment/149730/v2-0001-Support-prepared-statement-invalidation-when-resu.patch | git apply; \
+    curl https://www.postgresql.org/message-id/attachment/149731/v2-0002-Completely-remove-fixed_result-from-CachedPlanSou.patch | git apply; \
+    rm -rf .git; \
 # update "DEFAULT_PGSOCKET_DIR" to "/var/run/postgresql" (matching Debian)
 # see https://anonscm.debian.org/git/pkg-postgresql/postgresql.git/tree/debian/patches/51-default-sockets-in-var.patch?id=8b539fcb3e093a521c095e70bdfa76887217b89f
 	awk '$1 == "#define" && $2 == "DEFAULT_PGSOCKET_DIR" && $3 == "\"/tmp\"" { $3 = "\"/var/run/postgresql\""; print; next } { print }' src/include/pg_config_manual.h > src/include/pg_config_manual.h.new; \
@@ -96,14 +100,14 @@ RUN set -eux; \
 	export CLANG=clang-15; \
 	\
 # configure options taken from:
-# https://anonscm.debian.org/cgit/pkg-postgresql/postgresql.git/tree/debian/rules?h=9.5
+# https://anonscm.debian.org/cgit/pkg-postgresql/postgresql.git/tree/debian/rules?h=9.5 \
 	./configure \
 		--enable-option-checking=fatal \
 		--build="$gnuArch" \
 # "/usr/src/postgresql/src/backend/access/common/tupconvert.c:105: undefined reference to `libintl_gettext'"
 #		--enable-nls \
 		--enable-integer-datetimes \
-		--enable-thread-safety \
+#		--enable-thread-safety \
 		--enable-tap-tests \
 # skip debugging info -- we want tiny size instead
 #		--enable-debug \
@@ -128,9 +132,12 @@ RUN set -eux; \
 		--with-lz4 \
 		--with-zstd \
 	; \
-	make -j "$(nproc)" world; \
-	make install-world; \
+	make -j "$(nproc)" world-bin; \
+    echo "make -j nproc world"; \
+	make install-world-bin; \
+    echo "make install-world"; \
 	make -C contrib install; \
+    echo "make -C contrib install"; \
 	\
 	runDeps="$( \
 		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
